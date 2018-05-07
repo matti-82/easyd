@@ -1,5 +1,8 @@
 module easyd.base;
 
+// (C) 2014-2018 by Matthias Rossmy
+// This file is distributed under the "Fair Use License v1"
+
 import std.stdio;
 
 const int MEBI = 1024*1024;

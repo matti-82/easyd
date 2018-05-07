@@ -1,0 +1,32 @@
+====================================================================================================
+                             Fair Use License v1 - TERMS AND CONDITIONS
+====================================================================================================
+
+Definitions:
+
+"Main authors" are the authors with the highest contribution to the source code of the product,
+whose total contribution is more than 50%. E.g. author A contributed 40%, B 35% and C 25%, A and B
+are the main authors.
+
+Conditions:
+
+You are allowed to use and distribute binaries and source code of this product for free.
+But you have to comply with the following conditions:
+
+1. You need written permission of all main authors of this product, if you claim money for
+   - this product
+   - any product containing this product
+   - or any product using non-trivial parts of the source code of this product
+
+2. If you distribute this product, you must ensure that these license conditions and the original
+   copyright notice are also distributed.
+
+3. If you distribute a changed version of the source code of this product, it must be marked as
+   such.
+
+4. Modifying the source code of this product without permission of all main authors is creating a
+   new product. I.e. you can't displace main authors against their will by adding source code.
+
+====================================================================================================
+                                          End of License
+====================================================================================================
