@@ -1,5 +1,5 @@
 ====================================================================================================
-                             Fair Use License v1 - TERMS AND CONDITIONS
+                             Fair Use License v2 - TERMS AND CONDITIONS
 ====================================================================================================
 
 Definitions:
@@ -26,6 +26,8 @@ But you have to comply with the following conditions:
 
 4. Modifying the source code of this product without permission of all main authors is creating a
    new product. I.e. you can't displace main authors against their will by adding source code.
+
+5. The usage of this product is at your own risk.
 
 ====================================================================================================
                                           End of License

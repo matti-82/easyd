@@ -1,11 +1,47 @@
 module easyd.base;
 
 // (C) 2014-2018 by Matthias Rossmy
-// This file is distributed under the "Fair Use License v1"
+// This file is distributed under the "Fair Use License v2"
 
 import std.stdio;
 
 const int MEBI = 1024*1024;
+
+unittest
+{
+	static class StringArray
+	{
+		string[] data;
+		void delegate(string)[] itemAdded;
+		
+		void add(string s)
+		{
+			data ~= s;
+			itemAdded.trigger(s);
+		}
+	}
+	
+	static class MyComponent
+	{
+		StringArray sa;
+		int callCount = 0;
+		
+		this()
+		{
+			sa.create; //equivalent to sa = new StringArray; but create avoids repeating the type (especially useful with templates)
+			sa.itemAdded ~= &itemAddedHandler;
+		}
+
+		void itemAddedHandler(string s)
+		{
+			callCount++;
+		}
+	}
+	
+	auto mc = new MyComponent;
+	mc.sa.add("Test");
+	assert(mc.callCount==1);
+}
 
 T create(T,P...)(ref T obj,P par)
     if(is(T==class))

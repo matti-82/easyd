@@ -1,7 +1,7 @@
 module easyd.list;
 
 // (C) 2014-2018 by Matthias Rossmy
-// This file is distributed under the "Fair Use License v1"
+// This file is distributed under the "Fair Use License v2"
 
 import std.typecons;
 import std.traits;
