@@ -10,6 +10,12 @@ List Module
 - Selection class to allow filtering and sorting of lists and arrays without modifying them
 - ListIndex class to allow fast hash-based access to list items
 
+String Module
+
+- various ways to get substrings
+- find and replace
+- conversion and concatenation with delimiters
+
 Base Module
 
 - Several helper functions, e.g. for event handling
