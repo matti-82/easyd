@@ -439,7 +439,7 @@ class CList(T) /*: ISpecialSerialize*/
 		addHelper;
 	}
 	
-	void addBefore(LinkedListPointer!T before, T newItem)
+	LinkedListPointer!T addBefore(LinkedListPointer!T before, T newItem)
 	{
 		//writeln("addBefore");
 		if(!before.hasValue)
@@ -448,8 +448,23 @@ class CList(T) /*: ISpecialSerialize*/
 			add(newItem);
 		}
 
-		container.addAfter(list,before.prevLocation,newItem);
+		auto result = LinkedListPointer!T(container, container.addAfter(list,before.prevLocation,newItem));
 		addHelper;
+		return result;
+	}
+	
+	LinkedListPointer!T addAfter(LinkedListPointer!T after, T newItem)
+	{
+		//writeln("addAfter");
+		if(!after.hasValue)
+		{
+			//writeln("Can't addAfter, doing normal add");
+			add(newItem);
+		}
+		
+		auto result = LinkedListPointer!T(container, container.addAfter(list,after.location,newItem));
+		addHelper;
+		return result;
 	}
 	
 	void addIfNew(T item)
@@ -457,7 +472,7 @@ class CList(T) /*: ISpecialSerialize*/
 		if(!pointerOf(item).hasValue) add(item);
 	}
 
-	static if(is(T==class))
+	static if(is(T==class) || is(T==interface))
 	{
 		T2 addNew(T2=T,P...)(P par)
 		{
@@ -552,7 +567,7 @@ class CList(T) /*: ISpecialSerialize*/
 		}
 	}
 	
-	static if(is(T==class)) // class /////////////////////////////////////////////////////////////////////
+	static if(is(T==class) || is(T==interface)) // class /////////////////////////////////////////////////////////////////////
 	{
 		int opApply(int delegate(T) dg) const
 		{
@@ -840,7 +855,7 @@ class Selection(T)
 	
 	static if(__traits(hasMember, T, "tupleof") && !isTuple!T)
 	{
-		static if(is(T==class))
+		static if(is(T==class) || is(T==interface))
 		{
 			int opApply(int delegate(T) dg)
 			{
