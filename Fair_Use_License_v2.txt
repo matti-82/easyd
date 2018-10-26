@@ -2,6 +2,10 @@
                              Fair Use License v2 - TERMS AND CONDITIONS
 ====================================================================================================
 
+Summary:
+
+Free for non-commercial use. For commercial use, please see the conditions below.
+
 Definitions:
 
 "Main authors" are the authors with the highest contribution to the source code of the product,

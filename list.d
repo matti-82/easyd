@@ -183,13 +183,15 @@ class CLinkedListContainer(TValue)
 		//writeln("DestPos: " ~ pos.to!string);
 		
 		if(list.startLocation<0)
-		{   //create 1-item-list
+		{   
+			//writeln("create 1-item-list");
 			nextLocations[pos] = -1;
 			prevLocations[pos] = -1;
 			list.startLocation = pos;
 		}
 		else if (prevLocation<0)
-		{	//insert at beginning
+		{	
+			//writeln("insert at beginning");
 			auto nextLocation = list.startLocation;
 			nextLocations[pos] = nextLocation;
 			list.startLocation = pos;
@@ -198,7 +200,8 @@ class CLinkedListContainer(TValue)
 			if(nextLocation>=0) prevLocations[nextLocation] = pos;
 		}
 		else
-		{   //insert into list
+		{   
+			//writeln("insert into list");
 			auto nextLocation = nextLocations[prevLocation];
 			nextLocations[pos] = nextLocation;
 			nextLocations[prevLocation] = pos;
@@ -386,16 +389,106 @@ struct LinkedListContainer(TValue)
 	mixin ImplementStruct!(CLinkedListContainer!TValue);
 }
 
-class CList(T) /*: ISpecialSerialize*/
+mixin template CListIndexOperations(T,TKey)
+{
+	ListIndex!(T,TKey) mainIndex;
+
+	LinkedListPointer!T pointerOf(TKey key)
+	{
+		if(mainIndex is null) mainIndex = createMainIndex;
+		return mainIndex(key);
+	}
+
+	Selection!T all(TKey key)
+	{
+		if(mainIndex is null) mainIndex = createMainIndex;
+		return mainIndex.all(key);
+	}
+
+	bool contains(TKey key)
+	{
+		return pointerOf(key).hasValue;
+	}
+	
+	void delFirst(TKey key)
+	{
+		auto it = pointerOf(key);
+		if(it.hasValue)
+		{
+			del(it);
+		}
+	}
+
+	void delAll(TKey key)
+	{
+		foreach(pos,it,val;all(key)) del(it);
+	}
+	
+	static if(isAggregateType!T && !isTuple!T)
+	{
+		immutable string idfield = idField!T;
+
+		ref T opIndex(TKey key)
+		{
+			auto it = pointerOf(key);
+			if(it.hasValue)
+			{
+				return it.value;
+			}else{
+				return mainIndex.defaultValue;
+			}
+		}
+		
+		ref T opIndex(TKey key, T def)
+		{
+			auto it = pointerOf(key);
+			if(!it.hasValue)
+			{
+				it = add(def);
+				auto ptr = &(it.value());
+				__traits(getMember, *ptr, idfield) = key;
+			}
+			return it.value;
+		}
+	}
+}
+
+class CList(T) //: ISpecialSerialize
 {
 	size_t length = 0;
-	ListIndex!(T,T) mainIndex;
 	bool valuesCanChange;
 	CLinkedListContainer!T container;
 	protected LinkedListDescriptor list;
 	protected ptrdiff_t lastLocation;
-	protected IListIndex[] indexes; //TODO: auf signale umstellen
-	protected bool consecutive = true;
+	protected IListIndex[] indexes;
+
+	static if(isAggregateType!T && !isTuple!T)
+	{
+		static if(idField!T != "")
+		{
+			immutable string idfield = idField!T;
+			alias typeof(__traits(getMember, T, idfield)) TKey;
+
+			ListIndex!(T, TKey) createMainIndex()
+			{
+				return createIndex(item=>__traits(getMember, item, idfield),!valuesCanChange);
+			}
+
+			mixin CListIndexOperations!(T,TKey);
+		}
+	}else{ //simple type or tuple
+		ListIndex!(T,T) createMainIndex()
+		{
+			return createIndex(item=>item,!valuesCanChange);
+		}
+
+		mixin CListIndexOperations!(T,T);
+
+		void addIfNew(T item)
+		{
+			if(!pointerOf(item).hasValue) add(item);
+		}
+	}
 	
 	this(bool valuescanchange = true)
 	{
@@ -425,7 +518,6 @@ class CList(T) /*: ISpecialSerialize*/
 	{
 		container.clear;
 		list.startLocation = -1;
-		consecutive = true;
 		length=0;
 		foreach(index;indexes)
 		{
@@ -433,10 +525,11 @@ class CList(T) /*: ISpecialSerialize*/
 		}
 	}
 	
-	void add(T item)
+	LinkedListPointer!T add(T item)
 	{
 		lastLocation = container.addAfter(list,lastLocation,item);
 		addHelper;
+		return LinkedListPointer!T(container, lastLocation);
 	}
 	
 	LinkedListPointer!T addBefore(LinkedListPointer!T before, T newItem)
@@ -467,11 +560,6 @@ class CList(T) /*: ISpecialSerialize*/
 		return result;
 	}
 	
-	void addIfNew(T item)
-	{
-		if(!pointerOf(item).hasValue) add(item);
-	}
-
 	static if(is(T==class) || is(T==interface))
 	{
 		T2 addNew(T2=T,P...)(P par)
@@ -490,11 +578,11 @@ class CList(T) /*: ISpecialSerialize*/
 		}
 	}
 
-	void replace(LinkedListPointer!T it, T newValue)
+	/*void replace(LinkedListPointer!T it, T newValue)
 	{
 		container.values[it.location] = newValue;
 		//TODO: Indices aktualisieren
-	}
+	}*/
 	
 	ptrdiff_t del(LinkedListPointer!T it) //returns location of next item
 	{
@@ -506,10 +594,6 @@ class CList(T) /*: ISpecialSerialize*/
 		if(it.location==lastLocation)
 		{
 			lastLocation = it.prevLocation;
-		}
-		else
-		{
-			consecutive = false;
 		}
 		if(indexes !is null)
 		{
@@ -531,12 +615,26 @@ class CList(T) /*: ISpecialSerialize*/
 		it.skipNextInc = true;
 	}
 
-	void delFirst(T value)
+	void delFirstMatch(bool delegate(T) sd)
 	{
-		auto it = pointerOf(value);
-		if(it.hasValue)
+		for(auto it=iterator; it.hasValue; it++)
 		{
-			del(it);
+			if(sd(it.value))
+			{
+				del(it);
+				return;
+			}
+		}
+	}
+	
+	void delAllMatches(bool delegate(T) sd)
+	{
+		for(auto it=iterator; it.hasValue; it++)
+		{
+			if(sd(it.value))
+			{
+				del(it);
+			}
 		}
 	}
 	
@@ -554,21 +652,18 @@ class CList(T) /*: ISpecialSerialize*/
 	{
 		return iterator.value;
 	}
-	
-	ref T opIndex(size_t pos)
+
+	ref T itemAt(size_t number)
 	{
-		if(consecutive)
-		{
-			return container.values[pos];
-		}
-		else
-		{
-			throw exception("Usage of index operator not allowed after inserting or deleting items from a position before the end of list");
-		}
+		auto result = iterator;
+		for(size_t x=0; x<number; x++) result++;
+		return result.value;
 	}
 	
-	static if(is(T==class) || is(T==interface)) // class /////////////////////////////////////////////////////////////////////
+	static if(is(T==class) || is(T==interface)) // class /////////////////////////////////////////////////
 	{
+		//pragma(msg,typeid(T)," is class");
+
 		int opApply(int delegate(T) dg) const
 		{
 			int result = 0;
@@ -593,6 +688,8 @@ class CList(T) /*: ISpecialSerialize*/
 	}
 	else static if(__traits(hasMember, T, "tupleof")) // struct ////////////////////////////////////////////
 	{
+		//pragma(msg,typeid(T)," is struct");
+		
 		int opApply(int delegate(T*) dg) const
 		{
 			int result = 0;
@@ -617,6 +714,8 @@ class CList(T) /*: ISpecialSerialize*/
 	}
 	else // simple type ///////////////////////////////////////////////////////////////////////////////////
 	{
+		//pragma(msg,typeid(T)," is simple type");
+		
 		int opApply(int delegate(const T) dg) const
 		{
 			int result = 0;
@@ -653,20 +752,6 @@ class CList(T) /*: ISpecialSerialize*/
 		return result;
 	}
 	
-	LinkedListPointer!T pointerOf(T value)
-	{
-		if(mainIndex is null)
-		{
-			mainIndex = createIndex(item=>item,!valuesCanChange);
-		}
-		return mainIndex(value);
-	}
-	
-	bool contains(T value)
-	{
-		return pointerOf(value).hasValue;
-	}
-
 	bool contains(bool delegate(T) sd)
 	{
 		return find(sd).hasValue;
@@ -693,6 +778,23 @@ class CList(T) /*: ISpecialSerialize*/
 			}
 		}
 		return T2.init;
+	}
+
+	LinkedListPointer!T findMax(TMember)(TMember delegate(T) sd)
+	{
+		auto it=iterator;
+		auto mx = sd(it.value);
+		auto result = it.ptr;
+		for(it++; it.hasValue; it++)
+		{
+			auto v = sd(it.value);
+			if(v>mx)
+			{
+				mx = v;
+				result = it.ptr;
+			}
+		}
+		return result;
 	}
 	
 	/* TODO for DocMan
@@ -742,7 +844,7 @@ class CList(T) /*: ISpecialSerialize*/
 		return true;
 	}*/
 
-	void compact()
+	void compact() //ungenutzten Puffer abschneiden, nicht defragmentieren
 	{
 		ptrdiff_t maxloc=0;
 		for(auto it=iterator;it.hasValue;it++) if(it.location>maxloc) maxloc=it.location;
@@ -853,9 +955,9 @@ class Selection(T)
 		return source[locations[pos]];
 	}
 	
-	static if(__traits(hasMember, T, "tupleof") && !isTuple!T)
+	static if(__traits(hasMember, T, "tupleof"))
 	{
-		static if(is(T==class) || is(T==interface))
+		static if(is(T==class) || is(T==interface) || isTuple!T)
 		{
 			int opApply(int delegate(T) dg)
 			{
@@ -894,7 +996,7 @@ class Selection(T)
 				return result;
 			}
 		}
-		else
+		else //struct
 		{
 			int opApply(int delegate(T*) dg)
 			{
@@ -933,7 +1035,7 @@ class Selection(T)
 				return result;
 			}
 		}
-	}else{
+	}else{ //single value
 		int opApply(int delegate(const T) dg)
 		{
 			int result = 0;
@@ -1117,6 +1219,17 @@ class ListIndex(TItem,TKey) : IListIndex
 			return it.value;
 		}else{
 			return defaultValue;
+		}
+	}
+
+	ref TItem opIndex(TKey key, TItem def)
+	{
+		auto it = opCall(key);
+		if(it.hasValue)
+		{
+			return it.value;
+		}else{
+			return list.add(def).value;
 		}
 	}
 

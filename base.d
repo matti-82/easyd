@@ -4,6 +4,8 @@ module easyd.base;
 // This file is distributed under the "Fair Use License v2"
 
 import std.stdio;
+import std.traits;
+import std.typecons;
 
 const int MEBI = 1024*1024;
 
@@ -91,6 +93,23 @@ void trigger(T,T2)(void delegate(T,T2)[] listeners, T data, T2 data2)
 	{
 		func(data,data2);
 	}
+}
+
+struct IdField {}
+
+string idField(T)()
+{
+	static if(isAggregateType!T && !isTuple!T)
+	{
+		foreach (member; __traits(allMembers, T))
+		{
+			static if(__traits(compiles, hasUDA!(__traits(getMember, T, member), IdField)))
+			{
+				if (hasUDA!(__traits(getMember, T, member),	IdField)) return member;
+			}
+		}
+	}
+	return "";
 }
 
 mixin template ImplementStruct(T)
