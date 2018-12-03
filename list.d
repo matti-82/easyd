@@ -439,16 +439,19 @@ mixin template CListIndexOperations(T,TKey)
 			}
 		}
 		
-		ref T opIndex(TKey key, T def)
+		static if(idfield!="")
 		{
-			auto it = pointerOf(key);
-			if(!it.hasValue)
+			ref T opIndex(TKey key, T def)
 			{
-				it = add(def);
-				auto ptr = &(it.value());
-				__traits(getMember, *ptr, idfield) = key;
+				auto it = pointerOf(key);
+				if(!it.hasValue)
+				{
+					it = add(def);
+					auto ptr = &(it.value());
+					__traits(getMember, *ptr, idfield) = key;
+				}
+				return it.value;
 			}
-			return it.value;
 		}
 	}
 }
@@ -475,6 +478,18 @@ class CList(T) //: ISpecialSerialize
 			}
 
 			mixin CListIndexOperations!(T,TKey);
+		}else{
+			ListIndex!(T,T) createMainIndex()
+			{
+				return createIndex(item=>item,!valuesCanChange);
+			}
+
+			mixin CListIndexOperations!(T,T);
+
+			void addIfNew(T item)
+			{
+				if(!pointerOf(item).hasValue) add(item);
+			}
 		}
 	}else{ //simple type or tuple
 		ListIndex!(T,T) createMainIndex()
@@ -653,11 +668,23 @@ class CList(T) //: ISpecialSerialize
 		return iterator.value;
 	}
 
-	ref T itemAt(size_t number)
+	static if(isRefType!T)
 	{
-		auto result = iterator;
-		for(size_t x=0; x<number; x++) result++;
-		return result.value;
+		T itemAt(size_t number)
+		{
+			if(number>=length) return null;
+			auto result = iterator;
+			for(size_t x=0; x<number; x++) result++;
+			return result.value;
+		}
+	}else{
+		ref T itemAt(size_t number)
+		{
+			if(number>=length) throw exception("Requesting item out of range");
+			auto result = iterator;
+			for(size_t x=0; x<number; x++) result++;
+			return result.value;
+		}
 	}
 	
 	static if(is(T==class) || is(T==interface)) // class /////////////////////////////////////////////////

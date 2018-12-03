@@ -55,6 +55,12 @@ T create(T,P...)(ref T obj,P par)
     return obj;
 }
 
+bool isRefType(T)()
+{
+	T obj;
+	return __traits(compiles, obj=null);
+}
+
 bool hasDefaultConstructor(T)()
 {
 	return __traits(compiles, (new T));
@@ -110,6 +116,39 @@ string idField(T)()
 		}
 	}
 	return "";
+}
+
+bool setMember(TObj,TMem)(TObj obj, string member, TMem value)
+{
+    bool result = false;
+    static if(is(TObj:Object))
+    {
+        foreach(t; BaseClassesTuple!TObj)
+        {
+            result = setMemberHelper(cast(t)(obj),member,value) || result;
+        }
+    }
+    return setMemberHelper(obj,member,value) || result;
+}
+
+private bool setMemberHelper(TObj,TMem)(TObj obj, string member, ref TMem value)
+{
+    bool result = false;
+    static if(__traits(hasMember, TObj, "tupleof"))
+    {
+        foreach (i,m; obj.tupleof)
+        {
+            if(__traits(identifier, obj.tupleof[i]) == member)
+            {
+                static if(is(typeof(value):typeof(m)))
+                {
+                    obj.tupleof[i] = value;
+                    result = true;
+                }
+            }
+        }
+    }
+    return result;
 }
 
 mixin template ImplementStruct(T)

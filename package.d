@@ -8,3 +8,4 @@ public import easyd.string;
 
 public import std.stdio;
 public import std.algorithm.searching;
+public import std.uni;

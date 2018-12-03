@@ -4,6 +4,7 @@ module easyd.string;
 // This file is distributed under the "Fair Use License v2"
 
 import std.conv;
+import std.stdio;
 
 unittest
 {
@@ -155,5 +156,10 @@ string concat(T)(T[] a,string separator="",string delegate(T) tostr = item=>item
 		if(x<a.length-1) result ~= separator;
 	}
 	return result;
+}
+
+string inputLine()
+{
+	return std.stdio.readln.replace("\n","");
 }
 
