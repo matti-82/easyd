@@ -16,6 +16,23 @@ String Module
 - find and replace
 - conversion and concatenation with delimiters
 
+Stream Module
+
+- read and write streams
+
+Unix Module
+
+- convert paths to absolute and relative
+- build paths
+- access dirs
+- get user name
+- make output of processes available as stream
+
+Thread Module
+
+- convienience function to start threads
+- realtime support (execute code without being intercepted by GC)
+
 Base Module
 
 - Several helper functions, e.g. for event handling

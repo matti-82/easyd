@@ -5,6 +5,7 @@ module easyd.string;
 
 import std.conv;
 import std.stdio;
+import std.string;
 
 unittest
 {
@@ -21,6 +22,11 @@ unittest
 	assert(s.grow(20,'-',true)=="--------Hello World!");
 	int[] a = [1,2,3];
 	assert(a.concat(",")=="1,2,3");
+}
+
+string decPoint(T)(T x)
+{
+	return x.to!string.replace(",",".");
 }
 
 size_t countChar(string s, char c)

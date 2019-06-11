@@ -6,6 +6,34 @@ module easyd.base;
 import std.stdio;
 import std.traits;
 import std.typecons;
+import std.math;
+
+// aliases to allow writing types consistently in Pascal casing ////////
+
+alias byte Int8;
+alias ubyte UInt8;
+alias UInt8 Byte;
+alias short Int16;
+alias ushort UInt16;
+alias int Int32;
+alias uint UInt32;
+alias long Int64;
+alias ulong UInt64;
+
+alias Int32 Int;
+alias ptrdiff_t NInt; //native int
+alias size_t NUInt;
+
+alias float Float32;
+alias double Float64;
+alias real Real;
+
+alias Float32 Float;
+
+alias bool Bool;
+alias string Str;
+
+////////////////////////////////////////////////////////////////////////
 
 const int MEBI = 1024*1024;
 
@@ -45,6 +73,8 @@ unittest
 	assert(mc.callCount==1);
 }
 
+// language extensions /////////////////////////////////////////////////
+
 T create(T,P...)(ref T obj,P par)
     if(is(T==class))
 {
@@ -55,10 +85,37 @@ T create(T,P...)(ref T obj,P par)
     return obj;
 }
 
+T recreate(T,P...)(ref T obj,P par)
+	if(is(T==class))
+{
+	obj = new T(par);
+	return obj;
+}
+
+bool Try(lazy void expression)
+{
+    try
+    {
+        expression;
+        return true;
+    }
+    catch(Exception e)
+    {
+        return false;
+    }
+}
+
+// type tools //////////////////////////////////////////////////////////
+
 bool isRefType(T)()
 {
 	T obj;
 	return __traits(compiles, obj=null);
+}
+
+bool inherits(TCheck,TObj)(const TObj obj)
+{
+	return cast(const TCheck)(obj) !is null;
 }
 
 bool hasDefaultConstructor(T)()
@@ -66,16 +123,31 @@ bool hasDefaultConstructor(T)()
 	return __traits(compiles, (new T));
 }
 
-ulong toHash(T)(T x)
+// array tools /////////////////////////////////////////////////////////
+
+T first(T)(T[] array)
 {
-	return typeid(x).getHash(&x);
+	return array[0];
 }
 
-Exception exception(string errmsg, bool writeAlways=true)
+T last(T)(T[] array)
 {
-	if(writeAlways) writeln("Exception: "~errmsg);
-    return new Exception(errmsg);
+	return array[array.length-1];
 }
+
+T readFromPos(T)(Byte[] a, ulong pos)
+	if(isBasicType!T)
+{
+	return *(cast(T*)(&(a[pos])));
+}
+
+void writeToPos(T)(Byte[] a, ulong pos, T value)
+	if(isBasicType!T)
+{
+	*(cast(Unqual!T*)(&(a[pos]))) = value;
+}
+
+// trigger events //////////////////////////////////////////////////////
 
 void trigger(void delegate()[] listeners)
 {
@@ -99,6 +171,42 @@ void trigger(T,T2)(void delegate(T,T2)[] listeners, T data, T2 data2)
 	{
 		func(data,data2);
 	}
+}
+
+// misc ////////////////////////////////////////////////////////////////
+
+ulong toHash(T)(T x)
+{
+	return typeid(x).getHash(&x);
+}
+
+void followUp(T)(ref T follower, T master)
+{
+	static if(isFloatingPoint!T)
+	{
+		if(isNaN(master)) return;
+	}
+	if(master>follower) follower=master;
+}
+
+void followDown(T)(ref T follower, T master)
+{
+	static if(isFloatingPoint!T)
+	{
+		if(isNaN(master)) return;
+	}
+	if(master<follower) follower=master;
+}
+
+T weightedAvg(T)(T weight1, T x1, T x2)
+{
+	return weight1*x1 + (1-weight1)*x2;
+}
+
+Exception exception(string errmsg, bool writeAlways=true)
+{
+	if(writeAlways) writeln("Exception: "~errmsg);
+    return new Exception(errmsg);
 }
 
 struct IdField {}
