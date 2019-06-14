@@ -1,0 +1,18 @@
+{
+	"authors": [
+		"Matthias Rossmy"
+	],
+	"configurations": [
+		{
+			"name": "sourceLibrary",
+			"targetType": "sourceLibrary"
+		}
+	],
+	"copyright": "Copyright © 2014-2019, Matthias Rossmy",
+	"description": "Extension to the D standard library to make coding easier",
+	"license": "Fair Use License v2",
+	"name": "easyd",
+	"sourcePaths": [
+		"../"
+	]
+}

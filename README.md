@@ -38,6 +38,6 @@ Base Module
 - Several helper functions, e.g. for event handling
 - Template to create value types based on classes
 
-Currently only the base and list modules are published. Other modules will follow within the next months.
+Currently not all modules are published yet. Modules for serialization and GUIs will follow within the next months.
 
 Examples how to use easyd can be found in the unittests in the .d files.

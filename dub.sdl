@@ -1,5 +1,0 @@
-name "easyd"
-description "Extension to the D standard library to make coding easier"
-authors "Matthias Rossmy"
-copyright "Copyright © 2014-2018, Matthias Rossmy"
-license "Fair Use License v2"

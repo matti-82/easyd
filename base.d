@@ -123,6 +123,11 @@ bool hasDefaultConstructor(T)()
 	return __traits(compiles, (new T));
 }
 
+bool isClassOrStruct(T)()
+{
+	return __traits(hasMember, T, "tupleof");
+}
+
 // array tools /////////////////////////////////////////////////////////
 
 T first(T)(T[] array)
