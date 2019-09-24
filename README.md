@@ -33,6 +33,13 @@ Thread Module
 - convienience function to start threads
 - realtime support (execute code without being intercepted by GC)
 
+GTK Module
+
+- mixin template GuiApp
+- ILayoutWindow as recommended base class for main windows
+- various widgets and dialogs
+- mechanism to bind variables to the value of a widget
+
 Base Module
 
 - Several helper functions, e.g. for event handling
