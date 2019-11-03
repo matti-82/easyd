@@ -22,10 +22,14 @@ import std.conv;
 
 public import gtk.Main;
 import gtk.Grid;
+import gtk.Box;
 import gtk.Widget;
 import gtk.MainWindow;
 import gtk.MenuBar;
-import gtk.Box;
+import gtk.Menu;
+import gtk.ImageMenuItem;
+import gtk.SeparatorMenuItem;
+import gtk.AccelGroup;
 import gdk.Event;
 import gobject.ObjectG;
 
@@ -247,6 +251,7 @@ abstract class ILayoutWindow : MainWindow, IInit
     void delegate()[] onClose;
     protected MenuBar topMenuBarIntern;
     protected MenuBar bottomMenuBarIntern;
+    public AccelGroup accelGroup;
     protected Box vBox;
 
     public MenuBar topMenuBar()
@@ -315,16 +320,16 @@ class Binding(T) : IBinding
 	IBindable!T control;
 	string oldValue;
 
-	void load()
+	override void load()
 	{
 		control.value = *data;
-		oldValue = control.value.toComparableStr;
+		oldValue = control.value.to!string; //TODO: to!string durch String-Serialisierung ersetzen (damit Binding auch strukturierte Datentypen unterstützt)
 	}
 	
-	void apply()
+	override void apply()
 	{
-		string newvalue = control.value.toComparableStr;
-		if(newvalue != oldValue)
+		string newvalue = control.value.to!string; //TODO: to!string durch String-Serialisierung ersetzen
+		if(newvalue != oldValue) //strings vergleichen, weil der Vergleich von 2 gleichen class-Objekten trotzdem ungleich zurückgeben kann
 		{
 			*data = control.value;
 			static if(__traits(hasMember, T, "update")) (*data).update;
@@ -361,5 +366,150 @@ struct BindingSet
 	{
 		foreach(b;bindings) b.apply;
 	}
+}
+
+class MenuItem : ImageMenuItem
+{
+    Menu subMenuIntern;
+    void delegate()[] onClick;
+
+    this(string s, void delegate() onclick=null)
+    {
+        super(s);
+        setupEvents(onclick);
+    }
+
+    this(StockID id, void delegate() onclick=null)
+    {
+        super(id,null);
+        setupEvents(onclick);
+    }
+
+    this(string s, StockID id, void delegate() onclick=null)
+    {
+        super(id,null);
+        setLabel(s);
+        setupEvents(onclick);
+    }
+
+    this(Widget w, void delegate() onclick=null)
+    {
+        super();
+        setImage(w);
+        setupEvents(onclick);
+    }
+
+    Menu subMenu()
+    {
+        if(subMenuIntern is null)
+        {
+            subMenuIntern = new Menu();
+            setSubmenu(subMenuIntern);
+        }
+        return subMenuIntern;
+    }
+
+    MenuItem add(string s, void delegate() onclick=null)
+    {
+        auto item = new MenuItem(s,onclick);
+        subMenu.append(item);
+        return item;
+    }
+
+    MenuItem add(StockID id, void delegate() onclick=null)
+    {
+        auto item = new MenuItem(id,onclick);
+        subMenu.append(item);
+        return item;
+    }
+
+    MenuItem add(string s, StockID id, void delegate() onclick=null)
+    {
+        auto item = new MenuItem(s,id,onclick);
+        subMenu.append(item);
+        return item;
+    }
+
+    MenuItem addWidget(Widget w, void delegate() onclick=null)
+    {
+        auto item = new MenuItem(w,onclick);
+        subMenu.append(item);
+        return item;
+    }
+
+	void addSeparator()
+	{
+		subMenu.append(new SeparatorMenuItem);
+	}
+
+	void addAccel(ILayoutWindow win, string shortcut)
+    {
+        uint accelKey;
+        GdkModifierType accelMods;
+        AccelGroup.acceleratorParse(shortcut,accelKey,accelMods);
+        addAccelerator("activate",win.accelGroup,accelKey,accelMods,GtkAccelFlags.VISIBLE);
+    }
+
+    protected void setupEvents(void delegate() onclick)
+    {
+        addOnActivate(&onClickFunc);
+        //addOnButtonPress(&onPressFunc);
+        if(onclick !is null)
+        {
+            onClick ~= onclick;
+        }
+    }
+
+    /*protected bool onPressFunc(Event event, Widget widget)
+    {
+        onClick.trigger();
+        return onClick.length>0;
+    }*/
+
+    protected void onClickFunc(gtk.MenuItem.MenuItem item)
+    {
+        onClick.trigger();
+    }
+}
+
+mixin template MenuAdd()
+{
+    MenuItem add(string s, void delegate() onclick=null)
+    {
+        auto item = new MenuItem(s,onclick);
+        append(item);
+        return item;
+    }
+
+    MenuItem add(StockID id, void delegate() onclick=null)
+    {
+        auto item = new MenuItem(id,onclick);
+        append(item);
+        return item;
+    }
+
+    MenuItem add(string s, StockID id, void delegate() onclick=null)
+    {
+        auto item = new MenuItem(s,id,onclick);
+        append(item);
+        return item;
+    }
+
+    MenuItem addWidget(Widget w, void delegate() onclick=null)
+    {
+        auto item = new MenuItem(w,onclick);
+        append(item);
+        return item;
+    }
+}
+
+class Menu : gtk.Menu.Menu
+{
+    mixin MenuAdd;
+}
+
+class MenuBar : gtk.MenuBar.MenuBar
+{
+    mixin MenuAdd;
 }
 

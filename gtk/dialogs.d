@@ -64,7 +64,7 @@ struct Dialog
 		bindings.add(data,add(label,widget));
 	}
 	
-	int run(int okId=1)
+	int runAndGetButtonID(int okId=1)
 	{
 		bindings.load;
 		gtkDlg.showAll;
@@ -72,6 +72,11 @@ struct Dialog
 		gtkDlg.hide;
 		if(result==okId) bindings.apply;
 		return result;
+	}
+	
+	bool run(int okId=1)
+	{
+		return runAndGetButtonID(okId)==okId;
 	}
 
 	void return1()
