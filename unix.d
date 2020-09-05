@@ -10,6 +10,7 @@ import std.format;
 import std.conv;
 import std.algorithm;
 import std.process;
+import std.stdio;
 
 import easyd.base;
 import easyd.string;
@@ -181,5 +182,35 @@ class UntarStream : FileWriter
 		auto pipes = pipeShell("tar -x",Redirect.stdin);
 		file = pipes.stdin;
 	}
+}
+
+bool shellExec(string command, bool w=true, bool dbg=false)
+{
+	try
+	{
+		if(!w) command = "("~command~" &)";
+		if(dbg) writeln(getcwd,">",command);
+		auto pid = spawnShell(command);
+		if(w)
+		{
+			auto rc = wait(pid);
+			if(rc!=0 && dbg) writeln("Return code = ",rc);
+			return rc==0;
+		}
+		return true;
+	}catch(Exception e){
+		if(dbg) writeln(e);
+		return false;
+	}
+}
+
+bool isWritable(string fn)
+{
+	return shellExec("test -w \""~fn~"\"");
+}
+
+bool rootPermissions()
+{
+	return isWritable("/");
 }
 
