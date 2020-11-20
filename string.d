@@ -73,7 +73,7 @@ long find(string s, string f, long start=0, bool returnLengthIfNotFound=false)
 
 bool contains(string s, string f, long start=0, long* foundAtPos=null)
 {
-    long p = find(s,f,start);
+    long p = indexOf(s,f,start);
     if(foundAtPos)
     {
         *foundAtPos = p;
@@ -81,7 +81,7 @@ bool contains(string s, string f, long start=0, long* foundAtPos=null)
     return p>=0;
 }
 
-string replace(string s, string f, string r)
+/*string replace(string s, string f, string r) //not needed anymore in new D versions
 {
 	//writeln("Replacing "~f~" with "~r~" in "~s);
 	long start=0;
@@ -93,6 +93,23 @@ string replace(string s, string f, string r)
 		if(start<=0) start = 1;
     }
     return s;
+}*/
+
+struct StringPair
+{
+	string first;
+	string second;
+	
+	this(string f, string s="")
+	{
+		first=f;
+		second=s;
+	}
+}
+
+string replacePH(string s, StringPair placeHolders, string f, string r)
+{
+	return replace(s, placeHolders.first~f~placeHolders.second, r);
 }
 
 string subStr(string s, long start, long length=-1)
