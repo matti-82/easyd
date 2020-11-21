@@ -6,6 +6,8 @@ module easyd.stream;
 import std.stdio;
 import std.traits;
 import std.conv;
+import std.file;
+import std.path;
 import std.algorithm.comparison;
 
 import easyd.base;
@@ -336,6 +338,7 @@ class FileWriter : IWriteStream, ISeekableStream
 		{
 			file = stdout;
 		}else{
+			mkdirRecurse(fileName.dirName);
 			file = File(fileName,append?"a":"w");
 		}
 	}
