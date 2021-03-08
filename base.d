@@ -7,6 +7,8 @@ import std.stdio;
 import std.traits;
 import std.typecons;
 import std.math;
+import std.conv;
+import core.time;
 
 // aliases to allow writing types consistently in Pascal casing ////////
 
@@ -180,6 +182,11 @@ void trigger(T,T2)(void delegate(T,T2)[] listeners, T data, T2 data2)
 
 // misc ////////////////////////////////////////////////////////////////
 
+long ifloor(T)(T x)
+{
+    return floor(x).to!long;
+}
+
 ulong toHash(T)(T x)
 {
 	return typeid(x).getHash(&x);
@@ -262,6 +269,16 @@ private bool setMemberHelper(TObj,TMem)(TObj obj, string member, ref TMem value)
         }
     }
     return result;
+}
+
+ulong getMsec()
+{
+	return TickDuration.currSystemTick.msecs;
+}
+
+ulong msecSince(long refTime)
+{
+	return TickDuration.currSystemTick.msecs - refTime;
 }
 
 mixin template ImplementStruct(T)
