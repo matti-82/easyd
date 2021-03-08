@@ -8,6 +8,7 @@ import std.traits;
 import std.typecons;
 import std.math;
 import std.conv;
+import std.datetime;
 import core.time;
 
 // aliases to allow writing types consistently in Pascal casing ////////
@@ -279,6 +280,11 @@ ulong getMsec()
 ulong msecSince(long refTime)
 {
 	return TickDuration.currSystemTick.msecs - refTime;
+}
+
+DateTime now()
+{
+	return cast(DateTime)Clock.currTime;
 }
 
 mixin template ImplementStruct(T)
