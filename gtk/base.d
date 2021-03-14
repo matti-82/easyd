@@ -19,8 +19,10 @@ class TestWin : ILayoutWindow
 
 import easyd.base;
 import std.conv;
+import std.stdio;
 
 public import gtk.Main;
+import gtk.Clipboard;
 import gtk.Grid;
 import gtk.Box;
 import gtk.Widget;
@@ -30,6 +32,7 @@ import gtk.Menu;
 import gtk.ImageMenuItem;
 import gtk.SeparatorMenuItem;
 import gtk.AccelGroup;
+import gdk.Atom;
 import gdk.Event;
 import gobject.ObjectG;
 
@@ -43,6 +46,23 @@ mixin template GuiApp(T)
 		gMainWin = new T();
 		Main.run();
 	}
+}
+
+void handleGtkEvents(bool sleep=false, bool dbg=false)
+{
+	bool eventsProcessed=false;
+	while(Main.eventsPending)
+	{
+		Main.iteration;
+		eventsProcessed=true;
+	}
+	if(dbg) writeln(eventsProcessed?"Events processed":"No events");
+    if(sleep) sleepMsec(1);
+}
+
+Clipboard clipBoard(string name="CLIPBOARD")
+{
+	return Clipboard.get(intern(name, true));
 }
 
 class GridLayout : Grid

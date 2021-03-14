@@ -10,6 +10,7 @@ import std.math;
 import std.conv;
 import std.datetime;
 import core.time;
+import core.thread;
 
 // aliases to allow writing types consistently in Pascal casing ////////
 
@@ -280,6 +281,16 @@ ulong getMsec()
 ulong msecSince(long refTime)
 {
 	return TickDuration.currSystemTick.msecs - refTime;
+}
+
+void sleepMsec(uint duration)
+{
+	if(duration==0)
+	{
+		core.thread.Thread.yield;
+	}else{
+		core.thread.Thread.sleep( dur!("msecs")( duration ) );
+	}
 }
 
 DateTime now()
