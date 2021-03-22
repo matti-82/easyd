@@ -11,8 +11,8 @@ unittest
 {
 	string s = "Hello World!";
 	assert(s.countChar('l')==3);
-	assert(s.find('H')==0);
-	assert(s.find("World")==6);
+	assert(s.posOf('H')==0);
+	assert(s.posOf("World")==6);
 	assert(s.contains('!'));
 	assert(s.contains("or"));
 	assert(s.replace("l","L")=="HeLLo WorLd!");
@@ -36,7 +36,7 @@ size_t countChar(string s, char c)
     return result;
 }
 
-long find(string s, char c, long start=0)
+long posOf(string s, char c, long start=0)
 {
     for(long pos=start; pos<s.length.to!long; pos++)
     {
@@ -47,7 +47,7 @@ long find(string s, char c, long start=0)
 
 bool contains(string s, char c, long start=0, long* foundAtPos=null)
 {
-    long p = find(s,c,start);
+    long p = posOf(s,c,start);
     if(foundAtPos)
     {
         *foundAtPos = p;
@@ -55,7 +55,7 @@ bool contains(string s, char c, long start=0, long* foundAtPos=null)
     return p>=0;
 }
 
-long find(string s, string f, long start=0, bool returnLengthIfNotFound=false)
+long posOf(string s, string f, long start=0, bool returnLengthIfNotFound=false)
 {
 	//writeln("Searching for "~f~" in "~s~" from position "~start.to!string);
     long maxpos = s.length.to!long-f.length.to!long;
@@ -86,7 +86,7 @@ bool contains(string s, string f, long start=0, long* foundAtPos=null)
 	//writeln("Replacing "~f~" with "~r~" in "~s);
 	long start=0;
     long findpos;
-    while((findpos=s.find(f,start))>=0)
+    while((findpos=s.posOf(f,start))>=0)
     {
         s = s[0..findpos] ~ r ~ s[findpos+f.length..s.length];
         start = findpos+1+r.length.to!long-f.length.to!long;
