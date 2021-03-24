@@ -11,11 +11,8 @@ unittest
 {
 	string s = "Hello World!";
 	assert(s.countChar('l')==3);
-	assert(s.posOf('H')==0);
-	assert(s.posOf("World")==6);
 	assert(s.contains('!'));
 	assert(s.contains("or"));
-	assert(s.replace("l","L")=="HeLLo WorLd!");
 	assert(s.subStr(1,4)=="ello");
 	assert(s.getEnd(1)=="!");
 	assert(s.cutEnd(7)=="Hello");
