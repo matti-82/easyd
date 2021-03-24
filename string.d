@@ -36,18 +36,9 @@ size_t countChar(string s, char c)
     return result;
 }
 
-long posOf(string s, char c, long start=0)
+bool contains(T)(string s, T f, size_t start=0, ptrdiff_t* foundAtPos=null)
 {
-    for(long pos=start; pos<s.length.to!long; pos++)
-    {
-        if(s[pos]==c) return pos;
-    }
-    return -1;
-}
-
-bool contains(string s, char c, long start=0, long* foundAtPos=null)
-{
-    long p = posOf(s,c,start);
+    auto p = s.indexOf(f,start);
     if(foundAtPos)
     {
         *foundAtPos = p;
@@ -55,7 +46,7 @@ bool contains(string s, char c, long start=0, long* foundAtPos=null)
     return p>=0;
 }
 
-long posOf(string s, string f, long start=0, bool returnLengthIfNotFound=false)
+long posOf(string s, string f, long start=0, bool returnLengthIfNotFound=false) //not needed in new D versions, use indexOf unless you need returnLengthIfNotFound=true
 {
 	//writeln("Searching for "~f~" in "~s~" from position "~start.to!string);
     long maxpos = s.length.to!long-f.length.to!long;
@@ -70,30 +61,6 @@ long posOf(string s, string f, long start=0, bool returnLengthIfNotFound=false)
     }
 	return returnLengthIfNotFound? s.length : -1;
 }
-
-bool contains(string s, string f, long start=0, long* foundAtPos=null)
-{
-    long p = indexOf(s,f,start);
-    if(foundAtPos)
-    {
-        *foundAtPos = p;
-    }
-    return p>=0;
-}
-
-/*string replace(string s, string f, string r) //not needed anymore in new D versions
-{
-	//writeln("Replacing "~f~" with "~r~" in "~s);
-	long start=0;
-    long findpos;
-    while((findpos=s.posOf(f,start))>=0)
-    {
-        s = s[0..findpos] ~ r ~ s[findpos+f.length..s.length];
-        start = findpos+1+r.length.to!long-f.length.to!long;
-		if(start<=0) start = 1;
-    }
-    return s;
-}*/
 
 struct StringPair
 {
