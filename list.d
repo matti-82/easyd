@@ -155,6 +155,8 @@ class CLinkedListContainer(TValue)
 	
 	void clear()
 	{
+		if(values.length==0) return;
+
 		for(ptrdiff_t pos=0; pos<values.length; pos++)
 		{
 			static if(is(TValue:Object) || isDynamicArray!TValue || isAssociativeArray!TValue)
