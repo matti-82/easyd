@@ -189,7 +189,7 @@ bool shellExec(string command, bool w=true, bool dbg=false)
 	try
 	{
 		if(!w) command = "("~command~" &)";
-		if(dbg) writeln(getcwd,">",command);
+		if(dbg) writeln(getcwd,"> ",command);
 		auto pid = spawnShell(command);
 		if(w)
 		{
