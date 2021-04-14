@@ -220,7 +220,7 @@ class CLinkedListContainer(TValue)
 	{
 		if(it.container!=this)
 		{
-			throw exception("LinkedListPointer not from this container");
+			throw new Exception("LinkedListPointer not from this container");
 		}
 
 		beforeDel.trigger(it);
@@ -518,7 +518,7 @@ class CList(T) //: ISpecialSerialize
 		ptrdiff_t last=-1;
 		for(auto it=iterator;it.hasValue;it++)
 		{
-			if(it.prevLocation!=last) throw exception("Linked list broken, last item was "~last.to!string~" but prevLocation of "~it.location.to!string~" points to "~it.prevLocation.to!string);
+			if(it.prevLocation!=last) throw new Exception("Linked list broken, last item was "~last.to!string~" but prevLocation of "~it.location.to!string~" points to "~it.prevLocation.to!string);
 			last = it.location;
 		}
 		writeln("List-links ok");
@@ -682,7 +682,7 @@ class CList(T) //: ISpecialSerialize
 	}else{
 		ref T itemAt(size_t number)
 		{
-			if(number>=length) throw exception("Requesting item out of range");
+			if(number>=length) throw new Exception("Requesting item out of range");
 			auto result = iterator;
 			for(size_t x=0; x<number; x++) result++;
 			return result.value;
@@ -1014,7 +1014,7 @@ class Selection(T)
 			{
 				if(sourceList is null)
 				{
-					throw exception("Foreach with LinkedListIterator is not allowed on arrays");
+					throw new Exception("Foreach with LinkedListIterator is not allowed on arrays");
 				}
 				int result = 0;
 				foreach(index,location;locations)
@@ -1053,7 +1053,7 @@ class Selection(T)
 			{
 				if(sourceList is null)
 				{
-					throw exception("Foreach with LinkedListIterator is not allowed on arrays");
+					throw new Exception("Foreach with LinkedListIterator is not allowed on arrays");
 				}
 				int result = 0;
 				foreach(index,location;locations)
@@ -1091,7 +1091,7 @@ class Selection(T)
 		{
 			if(sourceList is null)
 			{
-				throw exception("Foreach with LinkedListIterator is not allowed on arrays");
+				throw new Exception("Foreach with LinkedListIterator is not allowed on arrays");
 			}
 			int result = 0;
 			foreach(index,location;locations)

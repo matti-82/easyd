@@ -217,12 +217,6 @@ T weightedAvg(T)(T weight1, T x1, T x2)
 	return weight1*x1 + (1-weight1)*x2;
 }
 
-Exception exception(string errmsg, bool writeAlways=true)
-{
-	if(writeAlways) writeln("Exception: "~errmsg);
-    return new Exception(errmsg);
-}
-
 struct IdField {}
 
 string idField(T)()

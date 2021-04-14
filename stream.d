@@ -44,7 +44,7 @@ T read(T)(IReadStream s)
 	}
 	else
 	{
-		throw exception("Read from stream failed",false);
+		throw new Exception("Read from stream failed");
 	}
 }
 
@@ -324,7 +324,7 @@ class FileReader : IReadStream, ISeekableStream
 
 	void seekWrite(ulong pos)
 	{
-		throw exception("FileReader does not support writing");
+		throw new Exception("FileReader does not support writing");
 	}
 }
 
@@ -362,7 +362,7 @@ class FileWriter : IWriteStream, ISeekableStream
 
 	void seekRead(ulong pos)
 	{
-		throw exception("FileWriter does not support reading");
+		throw new Exception("FileWriter does not support reading");
 	}
 }
 
