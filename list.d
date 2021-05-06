@@ -1,6 +1,6 @@
 module easyd.list;
 
-// (C) 2014-2018 by Matthias Rossmy
+// (C) 2014-2021 by Matthias Rossmy
 // This file is distributed under the "Fair Use License v2"
 
 import std.typecons;
@@ -147,11 +147,76 @@ struct LinkedListIterator(TValue)
 
 class CLinkedListContainer(TValue)
 {
+	immutable static bool debugMode=false;
+
 	void delegate(LinkedListPointer!TValue)[] beforeDel;
 	TValue[] values;
 	protected ptrdiff_t[] nextLocations;
 	protected ptrdiff_t[] prevLocations;
 	protected ptrdiff_t freeLocation=-1;
+
+	void validate(string info="")
+	{
+		size_t[] hits;
+		ptrdiff_t signedLength = values.length;
+		hits.length = values.length;
+		for(size_t i=0; i<hits.length; i++) hits[i]=0;
+		size_t steps=0;
+		//Check consistency of free list
+		if(freeLocation>=0) //wenn keine freien Elemente im Container, ist freeLocation=-1
+		{
+			ptrdiff_t p = freeLocation;
+			while(p>=0)
+			{
+				hits[p]++;
+				if(nextLocations[p]>=signedLength)
+				{
+					throw new Exception("nextLocations["~p.to!string~"] points outside of the container  "~info);
+				}
+				p=nextLocations[p];
+				if(++steps > values.length+100)
+				{
+					throw new Exception("Infinite loop in a linked list  "~info);
+				}
+			}
+		}
+		//Check consistency of real lists
+		static if(debugMode) //without debugMode prevLocations is not maintained for free items,
+		{					//so there would be false positive list starts
+			for(size_t i=0; i<hits.length; i++) if(prevLocations[i]<0 && i!=freeLocation)
+			{
+				ptrdiff_t p = i;
+				while(p>=0)
+				{
+					hits[p]++;
+					if(nextLocations[p]>=signedLength)
+					{
+						throw new Exception("nextLocations["~p.to!string~"] points outside of the container  "~info);
+					}
+					p=nextLocations[p];
+					if(++steps > values.length+100)
+					{
+						throw new Exception("Infinite loop in a linked list  "~info);
+					}
+				}
+			}
+		}
+		//Check that every item belongs to exactly 1 list
+		for(size_t i=0; i<hits.length; i++)
+		{
+			static if(debugMode) //without DebugMode the "lists test" must be skipped, so not every item may have been hit
+			{
+				if(hits[i]==0)
+				{
+					throw new Exception("Container item "~i.to!string~" is not reachable  "~info);
+				}
+			}
+			if(hits[i]> 1)
+			{
+				throw new Exception("Container item "~i.to!string~" is used by multiple lists  "~info);
+			}
+		}
+	}
 	
 	void clear()
 	{
@@ -164,17 +229,22 @@ class CLinkedListContainer(TValue)
 				values[pos] = null;
 			}
 			nextLocations[pos] = pos + 1;
-			//prevLocations[pos] = pos - 1; //Initialisierung von prevLocations nicht nötig,
-			//weil sie beim Hinzufügen von Items initialisiert werden und für die Frei-Liste irrelevant sind
+			static if(debugMode) prevLocations[pos] = pos - 1;
 		}
 		nextLocations[values.length-1] = -1;
 
 		freeLocation = 0;
+
+		static if(debugMode) validate;
 	}
 	
 	void addAnywhere(ref LinkedListDescriptor list, TValue val)
 	{
 		//insert after 1st item, because that requires no searching
+		if(freeLocation>=0 && list.startLocation==freeLocation)
+		{
+			throw new Exception("Start location of list conflicts with freeLocation ("~freeLocation.to!string~")");
+		}
 		addAfter(list,list.startLocation,val);
 	}
 	
@@ -190,30 +260,37 @@ class CLinkedListContainer(TValue)
 			nextLocations[pos] = -1;
 			prevLocations[pos] = -1;
 			list.startLocation = pos;
+
+			static if(debugMode) validate; //use 3 different validate calls in this function, so that the backtrace shows which case failed
 		}
 		else if (prevLocation<0)
 		{	
 			//writeln("insert at beginning");
 			auto nextLocation = list.startLocation;
-			nextLocations[pos] = nextLocation;
+			link(pos,nextLocation);
+			prevLocations[pos] = -1;
 			list.startLocation = pos;
-			
-			prevLocations[pos] = prevLocation;
-			if(nextLocation>=0) prevLocations[nextLocation] = pos;
+
+			static if(debugMode) validate;
 		}
 		else
 		{   
 			//writeln("insert into list");
 			auto nextLocation = nextLocations[prevLocation];
-			nextLocations[pos] = nextLocation;
-			nextLocations[prevLocation] = pos;
+			link(prevLocation,pos);
+			link(pos,nextLocation);
 
-			prevLocations[pos] = prevLocation;
-			if(nextLocation>=0) prevLocations[nextLocation] = pos;
+			static if(debugMode) validate("prevLocation="~prevLocation.to!string~" pos="~pos.to!string~" nextLocation="~nextLocation.to!string);
 		}
 		
 		//writeln("Finished addAfter");
 		return pos;
+	}
+
+	void link(ptrdiff_t pos1,ptrdiff_t pos2)
+	{
+		if(pos1>=0) nextLocations[pos1] = pos2;
+		if(pos2>=0) prevLocations[pos2] = pos1;
 	}
 
 	ptrdiff_t del(ref LinkedListDescriptor list, LinkedListPointer!TValue it) //returns location of next item
@@ -227,6 +304,16 @@ class CLinkedListContainer(TValue)
 		
 		auto nextLocation = it.nextLocation;
 		auto prevLocation = it.prevLocation;
+
+		static if(debugMode) if((it.location==list.startLocation)!=(prevLocation==-1))
+		{
+			if(prevLocation==-1)
+			{
+				throw new Exception("Iterator has no predecessor, but it is not at the start location of the list");
+			}else{
+				throw new Exception("Iterator has a predecessor, but it is at the start location of the list");
+			}
+		}
 		
 		//writeln("prev=",prevLocation," next=",nextLocation);
 		
@@ -241,19 +328,19 @@ class CLinkedListContainer(TValue)
 		{
 			//writeln("Change list start");
 			list.startLocation = nextLocation;
+			link(-1,nextLocation);
 		}
 		else
 		{
-			nextLocations[prevLocation] = nextLocation;
-		}
-		if(nextLocation>=0)
-		{
-			prevLocations[nextLocation] = prevLocation;
+			link(prevLocation,nextLocation);
 		}
 		
 		//frei gewordenes Item am Anfang der Frei-Liste einfügen
-		nextLocations[it.location] = freeLocation;
+		link(it.location,freeLocation);
+		prevLocations[it.location] = -1;
 		freeLocation = it.location;
+
+		static if(debugMode) validate;
 
 		return nextLocation;
 	}
@@ -263,70 +350,6 @@ class CLinkedListContainer(TValue)
 		it.location = del(list,it.ptr);
 		it.skipNextInc = true;
 	}
-	
-	/* TODO for DocMan
-	void bubbleUp(ref LinkedListDescriptor list, LinkedListPointer!TValue it)
-	{
-		if(it.container!=this)
-		{
-			throw exception("LinkedListPointer not from this container");
-		}
-		
-		if(it.location == list.startLocation)
-		{
-			return;
-		}
-		
-		auto nextlocation = it.nextLocation;
-		auto prevlocation = it.prevLocation(list);
-		
-		if(prevlocation == list.startLocation)
-		{
-			nextLocations[list.startLocation] = nextlocation;
-			nextLocations[it.location] = list.startLocation;
-			list.startLocation = it.location;
-		}
-		else
-		{
-			auto previt = LinkedListPointer!TValue(this,prevlocation);
-			auto prevprevlocation = previt.prevLocation(list);
-			
-			nextLocations[prevlocation] = nextlocation;
-			nextLocations[it.location] = prevlocation;
-			nextLocations[prevprevlocation] = it.location;
-		}
-	}
-	
-	void bubbleDown(ref LinkedListDescriptor list, LinkedListPointer!TValue it)
-	{
-		if(it.container!=this)
-		{
-			throw exception("LinkedListPointer not from this container");
-		}
-		
-		if(it.nextLocation<0)
-		{
-			return;
-		}
-		
-		auto nextlocation = it.nextLocation;
-		auto prevlocation = it.prevLocation(list);
-		auto nextit = LinkedListPointer!TValue(this,nextlocation);
-		auto nextnextlocation = nextit.nextLocation;
-		
-		nextLocations[nextlocation] = it.location;
-		nextLocations[it.location] = nextnextlocation;
-		
-		if(it.location == list.startLocation)
-		{
-			list.startLocation = nextlocation;
-		}
-		else
-		{
-			nextLocations[prevlocation] = nextlocation;
-		}
-	}
-	*/
 	
 	LinkedListIterator!TValue iterator(LinkedListDescriptor list) const
 	{
@@ -346,6 +369,8 @@ class CLinkedListContainer(TValue)
 	
 	protected void increaseSize()
 	{
+		immutable size_t maxInitialSize=4;
+
 		if(freeLocation>=0)
 		{
 			return;
@@ -356,12 +381,12 @@ class CLinkedListContainer(TValue)
 		{
 			auto initialsize = 1024 / max(TValue.sizeof,ptrdiff_t.sizeof); //initial max. 1 KB pro Sub-Array
 			if(initialsize<1) initialsize=1;
-			if(initialsize>64) initialsize=64;
+			if(initialsize>maxInitialSize) initialsize=maxInitialSize;
 			values.length = initialsize;
 			nextLocations.length = initialsize;
 			prevLocations.length = initialsize;
 		}
-		if(oldsize<=MEBI)
+		else if(oldsize<=MEBI)
 		{
 			values.length *= 2;
 			nextLocations.length *= 2;
@@ -377,12 +402,14 @@ class CLinkedListContainer(TValue)
 		for(ptrdiff_t pos=oldsize; pos<values.length; pos++)
 		{
 			nextLocations[pos] = pos + 1;
-			//prevLocations[pos] = pos - 1; //Initialisierung von prevLocations nicht nötig,
-			//weil sie beim Hinzufügen von Items initialisiert werden und für die Frei-Liste irrelevant sind
+			static if(debugMode) prevLocations[pos] = pos - 1;
 		}
+		static if(debugMode) prevLocations[oldsize] = -1;
 		nextLocations[values.length-1] = -1;
 		
 		freeLocation = oldsize;
+
+		static if(debugMode) validate;
 	}
 }
 
@@ -781,7 +808,7 @@ class CList(T) //: ISpecialSerialize
 		return result;
 	}
 	
-	bool contains(bool delegate(T) sd)
+	bool found(bool delegate(T) sd) //darf nicht contains heißen wegen Konflikt mit CListIndexOperations
 	{
 		return find(sd).hasValue;
 	}
@@ -863,6 +890,7 @@ class CList(T) //: ISpecialSerialize
 	{
 		foreach(child;source.current.children)
 		{
+			child.allowUnnamed;
 			auto newitem = source.deserialize!T(child);
 			static if(__traits(hasMember, T, "_first_member_inline_"))
 			{
@@ -901,6 +929,17 @@ class CList(T) //: ISpecialSerialize
 struct List(T)
 {
 	mixin ImplementStruct!(CList!T);
+}
+
+string concat(T)(CList!T l, string separator="", string delegate(T) tostr = item=>item.to!string)
+{
+	string result;
+	for(auto it=l.iterator; it.hasValue; it++)
+	{
+		result ~= tostr(it.value);
+		if(it.nextLocation>=0) result ~= separator;
+	}
+	return result;
 }
 
 class Selection(T)
@@ -1159,6 +1198,22 @@ size_t hash(T)(T x)
 	if(!is(T:BigInt))
 {
 	return x.toHash;
+}
+
+class IConstHashObject //this is needed, because Object.toHash is based on the address, which might change on garbage collections
+{
+	private ulong hash; //TODO: make @DontSerialize
+	private static ulong nextHash=0;
+
+	this()
+	{
+		hash = nextHash++;
+	}
+
+	override ulong toHash()
+	{
+		return hash;
+	}
 }
 
 class ListIndex(TItem,TKey) : IListIndex

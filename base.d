@@ -11,6 +11,7 @@ import std.conv;
 import std.datetime;
 import core.time;
 import core.thread;
+import core.memory;
 
 // aliases to allow writing types consistently in Pascal casing ////////
 
@@ -79,6 +80,18 @@ unittest
 
 // language extensions /////////////////////////////////////////////////
 
+void pinAddr(T)(T obj)
+{
+	GC.addRoot(cast(void*)obj);
+	GC.setAttr(cast(void*)obj, GC.BlkAttr.NO_MOVE);
+}
+
+void unpinAddr(T)(T obj)
+{
+	GC.clrAttr(cast(void*)obj, GC.BlkAttr.NO_MOVE);
+	GC.removeRoot(cast(void*)obj);
+}
+
 T create(T,P...)(ref T obj,P par)
     if(is(T==class))
 {
@@ -117,7 +130,8 @@ bool isRefType(T)()
 	return __traits(compiles, obj=null);
 }
 
-bool inherits(TCheck,TObj)(const TObj obj)
+//bool inherits(TCheck,TObj)(const TObj obj)
+bool inherits(TCheck,TObj)(TObj obj) //work around for the mutable ObjectG.opCast of gtk-d, which should not be mutable of course
 {
 	return cast(const TCheck)(obj) !is null;
 }
